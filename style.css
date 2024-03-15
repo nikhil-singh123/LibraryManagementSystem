@@ -1,0 +1,64 @@
+body
+{
+    margin: 0;
+    padding: 0;
+    background-color:rgb(255, 255, 255);
+    font-family: 'Arial';
+}
+.login{
+        width: 382px;
+        overflow: hidden;
+        margin: auto;
+        margin: 20 0 0 450px;
+        padding: 80px;
+        background: #198ae6;
+        border-radius: 15px ;
+
+}
+h2{
+    text-align: center;
+    color: #198ae6;
+    padding: 20px;
+}
+label{
+    color: white;
+    font-size: 17px;
+}
+#Uname{
+    width: 300px;
+    height: 30px;
+    border: none;
+    border-radius: 9px;
+    padding-left: 8px;
+    margin-top: 5px;
+}
+#Pass{
+    width: 300px;
+    height: 30px;
+    border: none;
+    border-radius: 9px;
+    padding-left: 8px;
+    margin: 5px;
+
+}
+#log{
+    width: 60px;
+    height: 30px;
+    border: none;
+    border-radius: 17px;
+    padding-left: 7px;
+    /* color: blue; */
+    margin-left: 5px;
+    background-color: white;
+}
+
+span{
+    color: white;
+    font-size: 12px;
+}
+a{
+    float: right;
+    color: white;
+    text-decoration: none;
+    font-size: 12px;
+}
