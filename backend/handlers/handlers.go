@@ -109,4 +109,15 @@ func AddBook(c *gin.Context){
 		return
 	}
 
+	//check for availabiltiy of book
+	var exisitingBook models.BookInventory
+	result:=database.DB.Where("isbn=?", request.Book.ISBN).First(&exisitingBook)
+	if result.RowsAffected>0{
+		exisitingBook.TotalCopies++
+		if err:= database.DB.Save(&exisitingBook).Error; err!=nil{
+			c.JSON(http.StatusInternalServerError, gin.H{"error":"Failed to updating book"})
+			return
+		}
+	}
+
 }
