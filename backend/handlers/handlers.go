@@ -122,22 +122,21 @@ func AddBook(c *gin.Context) {
 	//Book is not present
 	request.Book.TotalCopies = 1
 	if err := database.DB.Create(&request.Book).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create book"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create the  book"})
 		return
 	}
 
 }
 
-
-//Removing book
-func RemoveBook(c *gin.Context){
-	var request struct{
-		ISBN 	string		`json:"isbn"`
+// Removing book
+func RemoveBook(c *gin.Context) {
+	var request struct {
+		ISBN string `json:"isbn"`
 	}
 
-	if err:=c.BindJSON(&request); err!=nil{
-		c.JSON(http.StatusBadRequest,gin.H{
-			"error":err.Error()})
-			return
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error()})
+		return
 	}
 }
