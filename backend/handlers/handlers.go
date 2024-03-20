@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	//"backend/database"
-	//"backend/models"
+	
 	"backend/database"
 	"backend/models"
 	"net/http"
+	
+	
+
 
 	//"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -84,5 +86,27 @@ func CreateLibrary(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"message":"Library Created Succesfully", "library_id":num})
+
+}
+
+func AddBook(c *gin.Context){
+	var request struct{
+		Book 	models.BookInventory	`json:"book"`
+		AdminEmail string				`json:"email"`
+	}
+
+	if err:=c.BindJSON(&request); err!=nil{
+		c.JSON(http.StatusBadRequest, gin.H{"error":err.Error()})
+		return
+	}
+
+
+	//Validating email of admin
+	var existingEmail models.User
+	result1:=database.DB.Where("email=?", request.AdminEmail).First(&existingEmail)
+	if result1.RowsAffected==0{
+		c.JSON(http.StatusBadRequest,"Admin email is incorrect")
+		return
+	}
 
 }

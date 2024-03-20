@@ -8,7 +8,7 @@ type Library struct {
 }
 
 type User struct {
-	ID            uint   `json:"id" gorm: "primaryKey;autoIncrement"`
+	ID            uint   `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name          string `json:"name" gorm:"unique"`
 	Email         string `json:"email" gorm:"unique"`
 	ContactNumber string `json:"contact_number"`
