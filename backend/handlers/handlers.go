@@ -1,13 +1,9 @@
 package handlers
 
 import (
-	
 	"backend/database"
 	"backend/models"
 	"net/http"
-	
-	
-
 
 	//"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -50,74 +46,98 @@ func CreateLibrary(c *gin.Context) {
 
 	//If library doesn't exist
 
-	newLibrary :=models.Library{
+	newLibrary := models.Library{
 		Name: request.LibraryName,
 	}
 
-	if request.OwnerRole!="Reader"{
-		if err:=database.DB.Create(&newLibrary).Error;err!=nil{
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"Failed to create library"})
+	if request.OwnerRole != "Reader" {
+		if err := database.DB.Create(&newLibrary).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create library"})
 			return
 		}
 	}
 
-	if request.OwnerRole=="Reader"{
-		if result.RowsAffected>0{
-			num=existingLibrary.ID
+	if request.OwnerRole == "Reader" {
+		if result.RowsAffected > 0 {
+			num = existingLibrary.ID
 		}
-	}else{
-		num=newLibrary.ID
+	} else {
+		num = newLibrary.ID
 	}
-
 
 	//Create Owner User
 	var mod models.User
-	newOwner :=models.User{
-		Name:	request.OwnerName,
-		Email:  request.OwnerEmail,
+	newOwner := models.User{
+		Name:          request.OwnerName,
+		Email:         request.OwnerEmail,
 		ContactNumber: request.OwnerPhone,
-		Role:    request.OwnerRole,
-		LibID:   num,
+		Role:          request.OwnerRole,
+		LibID:         num,
 	}
 
-	if err := database.DB.Create(&newOwner).Error; err!=nil{
+	if err := database.DB.Create(&newOwner).Error; err != nil {
 		mod.ID--
-		c.JSON(http.StatusInternalServerError, gin.H{"error":"Creation of User Failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Creation of User Failed"})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"message":"Library Created Succesfully", "library_id":num})
+	c.JSON(http.StatusCreated, gin.H{"message": "Library Created Succesfully", "library_id": num})
 
 }
 
-func AddBook(c *gin.Context){
-	var request struct{
-		Book 	models.BookInventory	`json:"book"`
-		AdminEmail string				`json:"email"`
+//Add Book feature
+
+func AddBook(c *gin.Context) {
+	var request struct {
+		Book       models.BookInventory `json:"book"`
+		AdminEmail string               `json:"email"`
 	}
 
-	if err:=c.BindJSON(&request); err!=nil{
-		c.JSON(http.StatusBadRequest, gin.H{"error":err.Error()})
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-
 	//Validating email of admin
 	var existingEmail models.User
-	result1:=database.DB.Where("email=?", request.AdminEmail).First(&existingEmail)
-	if result1.RowsAffected==0{
-		c.JSON(http.StatusBadRequest,"Admin email is incorrect")
+	result1 := database.DB.Where("email=?", request.AdminEmail).First(&existingEmail)
+	if result1.RowsAffected == 0 {
+		c.JSON(http.StatusBadRequest, "Admin email is incorrect")
 		return
 	}
 
 	//check for availabiltiy of book
 	var exisitingBook models.BookInventory
-	result:=database.DB.Where("isbn=?", request.Book.ISBN).First(&exisitingBook)
-	if result.RowsAffected>0{
+	result := database.DB.Where("isbn=?", request.Book.ISBN).First(&exisitingBook)
+	if result.RowsAffected > 0 {
 		exisitingBook.TotalCopies++
-		if err:= database.DB.Save(&exisitingBook).Error; err!=nil{
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"Failed to updating book"})
+		if err := database.DB.Save(&exisitingBook).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to updating book"})
 			return
 		}
+
+		c.JSON(http.StatusOK, exisitingBook)
+		return
 	}
 
+	//Book is not present
+	request.Book.TotalCopies = 1
+	if err := database.DB.Create(&request.Book).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create book"})
+		return
+	}
+
+}
+
+
+//Removing book
+func RemoveBook(c *gin.Context){
+	var request struct{
+		ISBN 	string		`json:"isbn"`
+	}
+
+	if err:=c.BindJSON(&request); err!=nil{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":err.Error()})
+			return
+	}
 }
