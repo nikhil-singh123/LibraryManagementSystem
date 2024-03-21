@@ -3,7 +3,10 @@ package handlers
 import (
 	"backend/database"
 	"backend/models"
+	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	//"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -217,3 +220,64 @@ func ListIssueRequests(c *gin.Context){
 }
 
 
+//request approval
+
+func ApprovedIssueRequest(c *gin.Context){
+	requestID, err:= strconv.ParseUint(c.Param("request_id"),10,64)
+	if err!=nil{
+		c.JSON(http.StatusBadRequest, gin.H{"error":"Invalid request ID"})
+		return
+	}
+	var request models.RequestEvent
+	if err:=database.DB.First(&request,requestID).Error; err!=nil{
+		c.JSON(http.StatusNotFound, gin.H{"error":"Request not found"})
+		return
+	}
+
+	//update request details
+
+	request.ApprovalDate=time.Now()
+	request.ApproverID=1
+	if err:=database.DB.Save(&request).Error; err!=nil{
+		c.JSON(http.StatusInternalServerError, gin.H{"error":"failed to approve requests "})
+		return
+	}
+
+	var issueRegistry models.IssueRegistry
+	//putting value in issue registry
+	result := database.DB.Where("reader_id = ?", requestID).First(&issueRegistry)
+	fmt.Println(requestID)
+	if result.RowsAffected == 0 {
+		issueRegistry := models.IssueRegistry{
+			ISBN:               request.BookID,
+			ReaderID:           request.ReaderID,
+			IssueApproverID:    request.ApproverID,
+			IssueStatus:        "APPROVED",
+			IssueDate:          time.Now(),
+			ExpectedReturnDate: time.Now(),
+			ReturnDate:         time.Now(),
+			ReturnApproverID:   request.ApproverID,
+		}
+		if err := database.DB.Create(&issueRegistry).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create issue request"})
+			return
+		}
+
+	} else {
+		if err := database.DB.Where("reader_id = ?", request.ReaderID).First(&issueRegistry).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find issue registory"})
+			return
+		}
+
+		issueRegistry.IssueStatus = "Approved"
+		issueRegistry.IssueDate = time.Now()
+
+		if err := database.DB.Save(&issueRegistry).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update issue registry"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Issue request approved successfully"})
+
+}
