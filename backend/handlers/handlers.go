@@ -139,4 +139,81 @@ func RemoveBook(c *gin.Context) {
 			"error": err.Error()})
 		return
 	}
+
+	//Validating if thee book is present or not
+
+	var book models.BookInventory
+	result:=database.DB.Where("isbn=?", request.ISBN).First(&book)
+	if result.RowsAffected==0{
+		c.JSON(http.StatusNotFound, gin.H{"error":"Book not found"})
+		return
+	}
+
+	// Validating if book is present but doesn't have copies left in library
+	if book.TotalCopies==0{
+		c.JSON(http.StatusBadRequest, gin.H{"error":"No copies available in Library"})
+		return
+	}
+
+	// Validating if copy of book is issued
+
+	if book.AvailableCopies< book.TotalCopies{
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Copy of book can't be removed"})
+		return
+	}
+
+	//Function for decreasing the copies
+	book.TotalCopies--
+
+	if err :=database.DB.Save(&book).Error;err !=nil{
+		c.JSON(http.StatusInternalServerError, gin.H{"error":"failed to update the book"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message":"Book removed!"})
 }
+
+// Function for updation of Books
+func UpdateBook(c *gin.Context){
+	var request struct{
+		ISBN 			string					`json:"isbn"`
+		UpdatedDetails	models.BookInventory	`json:"updated-details"`
+	}
+
+	if err:= c.BindJSON(&request); err!=nil{
+		c.JSON(http.StatusBadRequest, gin.H{"error":err.Error()})
+		return
+	}
+
+
+	//condition to check if the book exists
+	var book models.BookInventory
+	result:=database.DB.Where("isbn=?",request.ISBN).First(&book)
+	if result.RowsAffected==0{
+		c.JSON(http.StatusNotFound, gin.H{"error":"No books found by the provided ISBN"})
+		return
+	}
+
+	//updation of details
+	if err:= database.DB.Model(&book).Updates(request.UpdatedDetails).Error; err!=nil{
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update the book"})
+		return
+	}
+
+	c.JSON(http.StatusOK,book)
+}
+
+//Listing issue request
+
+func ListIssueRequests(c *gin.Context){
+	var issueRequests []models.RequestEvent
+
+	//fetching request from database
+
+	if err:= database.DB.Find(&issueRequests).Error; err!=nil{
+		c.JSON(http.StatusInternalServerError, gin.H{"error":"failed to fetch issue requests"})
+		return
+	}
+	c.JSON(http.StatusOK, issueRequests)
+}
+
+
