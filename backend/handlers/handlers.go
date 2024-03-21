@@ -92,7 +92,7 @@ func CreateLibrary(c *gin.Context) {
 func AddBook(c *gin.Context) {
 	var request struct {
 		Book       models.BookInventory `json:"book"`
-		AdminEmail string               `json:"email"`
+		AdminEmail string               `json:"admin_email"`
 	}
 
 	if err := c.BindJSON(&request); err != nil {
