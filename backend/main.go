@@ -22,6 +22,12 @@ func main() {
 	r.DELETE("/remove-book", handlers.RemoveBook)            //deletion of books
 	r.GET("/list-issue-request", handlers.ListIssueRequests) //list of issues request
 
+	//readers role
+	r.POST("/search/book", handlers.SearchBook)
+	r.POST("/issue/request", handlers.RaiseIssueRequest)
+	r.POST("/approve-issue-request/:request_id", handlers.ApprovedIssueRequest)
+	r.DELETE("/reject-issue-request/:request_id", handlers.RejectIssueRequest)
+
 	r.Run(":8088") //running on port localhost:8088
 
 }

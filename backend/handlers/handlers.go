@@ -279,3 +279,105 @@ func ApprovedIssueRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Issue request approved successfully"})
 
 }
+
+func RejectIssueRequest(c *gin.Context) {
+	requestID, err := strconv.ParseUint(c.Param("request_id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+		return
+	}
+
+	var request models.RequestEvent
+	if err := database.DB.First(&request, requestID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Request not found"})
+		return
+	}
+
+	//Deleting request
+
+	if err := database.DB.First(&request, requestID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete request"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "issue request rejected successfully"})
+}
+
+//Search for Books matching
+
+func SearchBook(c *gin.Context) {
+	var request struct {
+		Title     string `json:"title"`
+		Author    string `json:"author"`
+		Publisher string `json:"publisher"`
+	}
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var books models.BookInventory
+	result := database.DB.Where("title LIKE ?", "%"+request.Title+"%").Where("authors LIKE ?", "%"+request.Author+"%").Where("publisher LIKE ?", "%"+request.Publisher+"%").Find(&books)
+
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search books"})
+		return
+	}
+	c.JSON(http.StatusOK, books)
+}
+
+//Raise an issue request
+
+func RaiseIssueRequest(c *gin.Context) {
+	var request struct {
+		BookID string `json:"book_id"`
+		Email  string `json:"email"`
+	}
+
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	//check if book exists
+
+	var book models.BookInventory
+	result := database.DB.Where("isbn=?", request.BookID).First((&book))
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book is not found"})
+		return
+	}
+
+	//Providing approver ID
+	var col models.User
+	result1 := database.DB.Where("email = ?", request.Email).First(&col)
+	if result1.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+
+	//Check if book is available
+	if book.AvailableCopies == 0 {
+		//Create a new issue request
+		issueRequest := models.RequestEvent{
+			BookID:      request.BookID,
+			ReaderID:    col.ID,
+			RequestDate: time.Now(),
+			RequestType: "Issue",
+		}
+
+		if err := database.DB.Create(&issueRequest).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "failed to create issue request"})
+			return
+		}
+		//printing issue request in json format
+		c.JSON(http.StatusCreated, issueRequest)
+		return
+	}
+	book.AvailableCopies--
+	if err := database.DB.Save(&book).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update book availability"})
+		return
+	}
+
+}
