@@ -3,7 +3,7 @@ package main
 import (
 	"backend/database"
 	"backend/handlers"
-	"github.com/golang-jwt/jwt/v5"
+	//"github.com/golang-jwt/jwt/v5"
 	"github.com/gin-gonic/gin"
 )
 
